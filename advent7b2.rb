@@ -1,4 +1,4 @@
-oinput = File.read(ARGV[0])
+input = File.read(ARGV[0])
 num_of_lines = input.count("\n") + 1
  
 def interpret(line)
@@ -57,6 +57,8 @@ def evaluate(line, gates)
         if has_digits?(info[3])
             gates[info[2]] = (info[3].to_i >> info[1])
         else
+        	puts gates[info[3]]
+        	puts info[1]
             gates[info[2]] = (gates[info[3]] >> info[1])
         end
     elsif info[0] == 3
@@ -116,3 +118,34 @@ while $lines_processed.size != num_of_lines do #as long as all lines haven't bee
 end
  
 puts "Value on wire a: #{gates["a"]}"
+
+gates = {"b"=>gates["a"]}
+
+$lines_processed = []
+ 
+input.each_line.with_index do |line, index|
+	if interpret(line)[2] == "b"
+		puts "safe"
+		$lines_processed.push(index)
+	end
+end
+
+while $lines_processed.size != num_of_lines do #as long as all lines haven't been processed run this loop
+    input.each_line.with_index do |line, index|
+        if !$lines_processed.include? index #if line is not processed yet run this branch   
+
+            info = interpret(line)
+            if info[0] < 4 || info[0] > 5 #mode is set to 1,2,3 or 6
+                if (gates[info[3]] != "default") || has_digits?(info[3]) #if the independant variable has a value already assigned to it(by hash or from input)
+                    $lines_processed.push(index)
+                    evaluate(line, gates)
+                end
+            else #mode is 4 or 5
+                if (gates[info[4]] != "default" || has_digits?(info[4])) && (gates[info[5]] != "default" || has_digits?(info[5])) #if both independant variables have values
+                    $lines_processed.push(index)
+                    evaluate(line, gates)
+                end
+            end
+        end
+    end
+end

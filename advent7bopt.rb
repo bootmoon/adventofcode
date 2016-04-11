@@ -1,16 +1,13 @@
-oinput = File.read(ARGV[0])
-num_of_lines = input.count("\n") + 1
- 
-def interpret(line)
+input = File.read(ARGV[0])
+
+ def interpret(line)
  
     array_words = line.split(/ /)
     array_words[array_words.size-1] = array_words[array_words.size-1].split[0]
     factor = 0
     variable_dependant = array_words[array_words.size-1]
-    variable_independant = "default"
-    variable_independant1 = "default"
-    variable_independant2 = "default"
- 
+    variable_independant, variable_independant1, variable_independant2 = "default", "default","default"
+
     if array_words[0] == "NOT"
         mode = 1
         variable_independant = array_words[1]
@@ -30,11 +27,11 @@ def interpret(line)
         mode = 5
         variable_independant1 = array_words[0]
         variable_independant2 = array_words[2]
-    elsif array_words[1] == "->"
+    else
         mode = 6
         variable_independant = array_words[0]
     end
- 
+
     return [mode, factor, variable_dependant, variable_independant, variable_independant1, variable_independant2]
 end
  
@@ -45,8 +42,8 @@ end
 gates = {}
 gates.default = "default"
  
-def evaluate(line, gates)
-    info = interpret(line)
+def evaluate(line, gates) #evaluates a line with the bitwise operators/complicated to analyze but essentially a bunch of logic gates
+    info = interpret(line) 
     if info[0] == 1
         if has_digits?(info[3])
             gates[info[2]] = ~(info[3].to_i)
@@ -89,30 +86,62 @@ def evaluate(line, gates)
         if has_digits?(info[3])
             gates[info[2]] = info[3].to_i
         else
-            gates[info[2]] = gates[info[3]] #edit: might not work, have to double check all of this
+            gates[info[2]] = gates[info[3]]
         end
     end
 end
  
-$lines_processed = []
+lines_processed = []
  
-while $lines_processed.size != num_of_lines do #as long as all lines haven't been processed run this loop
+while lines_processed.size != input.count("\n") + 1 do #as long as all lines haven't been processed run this loop
     input.each_line.with_index do |line, index|
-        if !$lines_processed.include? index #if line is not processed yet run this branch      
+        if !lines_processed.include? index #if line is not processed yet run this branch      
             info = interpret(line)
             if info[0] < 4 || info[0] > 5 #mode is set to 1,2,3 or 6
                 if (gates[info[3]] != "default") || has_digits?(info[3]) #if the independant variable has a value already assigned to it(by hash or from input)
-                    $lines_processed.push(index)
+                    lines_processed.push(index)
                     evaluate(line, gates)
                 end
             else #mode is 4 or 5
                 if (gates[info[4]] != "default" || has_digits?(info[4])) && (gates[info[5]] != "default" || has_digits?(info[5])) #if both independant variables have values
-                    $lines_processed.push(index)
+                    lines_processed.push(index)
                     evaluate(line, gates)
                 end
             end
         end
     end
 end
- 
-puts "Value on wire a: #{gates["a"]}"
+a = gates["a"]
+puts "Value on wire a: #{a}"
+gates.clear
+gates = {"b"=>a}
+gates.default = "default"
+
+lines_processed = []
+
+input.each_line.with_index do |line, index| 
+    if interpret(line)[2] == "b"
+        lines_processed.push(index)
+    end
+end
+
+while lines_processed.size != input.count("\n") + 1 do #as long as all lines haven't been processed run this loop
+    input.each_line.with_index do |line, index|
+        if !lines_processed.include? index #if line is not processed yet run this branch   
+            info = interpret(line)
+            if info[0] < 4 || info[0] > 5 #mode is set to 1,2,3 or 6
+                if (gates[info[3]] != "default") || has_digits?(info[3]) #if the independant variable has a value already assigned to it(by hash or from input)
+                    lines_processed.push(index)
+                    evaluate(line, gates)
+                end
+            else #mode is 4 or 5
+                if (gates[info[4]] != "default" || has_digits?(info[4])) && (gates[info[5]] != "default" || has_digits?(info[5])) #if both independant variables have values
+                    lines_processed.push(index)
+                    evaluate(line, gates)
+                end
+            end
+        end
+    end
+end
+
+puts "Value on wire a after reset: #{gates["a"]}"
